@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 30px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    
+    video {
+      width: 100%;
+      height: auto;
+      display: block;
+      margin-top: 20px;
+      background-color: #eee;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <button onclick="handleStart()">开 始</button>
+    <video controls id="video" autoplay></video>
+  </div>
+
+  <script>
+    const handleStart = () => {
+      const video = document.getElementById('video');
+      const ws = new WebSocket('ws://localhost:3000');
+      ws.binaryType = 'arraybuffer';
+      // const mimeCodec = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2';
+      const mimeCodec = 'video/mp4; codecs="avc1.42E01E';
+      // const mimeCodec = 'video/webm; codecs="vorbis, vp8"';
+
+      // websocket 连接成功后发送获取视频流的消息
+      ws.addEventListener('open', () => {
+        // // 发送请求获取视频流
+        ws.send('getVideoStream');
+      });
+
+      let mediaSource;
+
+      if ('MediaSource' in window && MediaSource.isTypeSupported(mimeCodec)) {
+        mediaSource = new MediaSource();
+        //console.log(mediaSource.readyState); // closed
+        video.src = URL.createObjectURL(mediaSource);
+        mediaSource.addEventListener('sourceopen', sourceOpen);
+      } else {
+        console.error('Unsupported MIME type or codec: ', mimeCodec);
+      }
+
+      function sourceOpen() {
+        const sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
+        const chunks = [];
+
+        const appendBuffer = () => {
+          console.log('appendBuffer');
+          if (chunks.length) {
+            console.log(chunks, 'chunks');
+            const chunk = chunks.shift();
+            sourceBuffer.appendBuffer(new Uint8Array(chunk));
+            sourceBuffer.removeEventListener('updateend', appendBuffer);
+            sourceBuffer.addEventListener('updateend', appendBuffer);
+          } else {
+            console.log(sourceBuffer, 'sourceBuffer');
+            let timer = setInterval(() => {
+              if (chunks.length) {
+                clearInterval(timer);
+                appendBuffer();
+              }
+            }, 50);
+          }
+        };
+
+        let firstReceive = true;
+
+        // 接收视频流
+        ws.addEventListener('message', (event) => {
+          const data = event.data;
+          console.log(event.data, 'event.data');
+          chunks.push(event.data);
+          if (!window.packageCount) window.packageCount = 0;
+          window.packageCount += 1;
+          if (firstReceive) {
+            appendBuffer();
+            firstReceive = false;
+          }
+        });
+      }
+    }
+  </script>
+</body>
+
+</html>

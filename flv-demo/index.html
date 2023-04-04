@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 30px;
+    }
+    
+    video {
+      width: 1000px;
+      height: auto;
+      display: block;
+      margin-top: 20px;
+      background-color: #eee;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <button onclick="handleStart()">开 始</button>
+    <video controls id="video" autoplay></video>
+  </div>
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/flv.js/1.5.0/flv.min.js"></script>
+  <script>
+    const handleStart = () => {
+      if (flvjs.isSupported()) {
+        const videoElement = document.getElementById('video');
+        const flvPlayer = flvjs.createPlayer({
+          type: 'flv',
+          url: 'ws://localhost:8000/live/STREAM_NAME.flv'
+        });
+        flvPlayer.attachMediaElement(videoElement);
+        flvPlayer.load();
+        flvPlayer.play();
+      }
+    }
+  </script>
+</body>
+
+</html>
