@@ -1,11 +1,9 @@
 # 1.开启 rtmp 服务
 
 ```shell
-cd ./rtmp-server
-
 npm i
 
-node server.js
+node media-server.js
 ```
 
 # 2.ffmpeg 推流命令
